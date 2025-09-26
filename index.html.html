@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MNR - Smart Grocery List</title>
+    <meta name="theme-color" content="#3B82F6">
+    <meta name="description" content="Sync grocery lists with your family in real-time">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛒</text></svg>">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛒</text></svg>">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loadingScreen" class="loading-screen">
+        <div class="loading-content">
+            <div class="loading-spinner-large"></div>
+            <h2>FamilyGrocer</h2>
+            <p>Loading your grocery experience...</p>
+        </div>
+    </div>
+
+    <!-- Authentication Screen -->
+    <div id="authScreen" class="auth-screen">
+        <div class="auth-container">
+            <div class="auth-card">
+                <div class="auth-header">
+                    <div class="app-logo">🛒</div>
+                    <h1>FamilyGrocer</h1>
+                    <p>Smart grocery shopping with your family</p>
+                </div>
+
+                <div class="auth-tabs">
+                    <button class="auth-tab active" id="loginTab">Login</button>
+                    <button class="auth-tab" id="signupTab">Sign Up</button>
+                </div>
+
+                <div id="loginForm" class="auth-form active">
+                    <div class="form-group">
+                        <input type="email" id="loginEmail" placeholder="Enter your email" class="auth-input">
+                    </div>
+                    <div class="form-group">
+                        <input type="password" id="loginPassword" placeholder="Enter your password" class="auth-input">
+                    </div>
+                    <div class="auth-options">
+                        <button class="forgot-password" id="forgotPassword">Forgot Password?</button>
+                    </div>
+                    <button id="loginBtn" class="auth-btn primary">Login to Your Account</button>
+                    <div class="auth-divider">
+                        <span>or continue with</span>
+                    </div>
+                    <button id="googleLoginBtn" class="auth-btn google">
+                        <span>🔍</span>
+                        Continue with Google
+                    </button>
+                </div>
+
+                <div id="signupForm" class="auth-form">
+                    <div class="form-group">
+                        <input type="text" id="signupName" placeholder="Your full name" class="auth-input">
+                    </div>
+                    <div class="form-group">
+                        <input type="email" id="signupEmail" placeholder="Your email address" class="auth-input">
+                    </div>
+                    <div class="form-group">
+                        <input type="password" id="signupPassword" placeholder="Create a password" class="auth-input">
+                    </div>
+                    <button id="signupBtn" class="auth-btn primary">Create New Account</button>
+                    <div class="auth-divider">
+                        <span>or continue with</span>
+                    </div>
+                    <button id="googleSignupBtn" class="auth-btn google">
+                        <span>🔍</span>
+                        Continue with Google
+                    </button>
+                </div>
+
+                <div id="resetPasswordForm" class="auth-form">
+                    <div class="form-group">
+                        <input type="email" id="resetEmail" placeholder="Enter your email address" class="auth-input">
+                    </div>
+                    <button id="resetPasswordBtn" class="auth-btn primary">Send Reset Link</button>
+                    <button class="auth-btn outline" id="backToLogin">Back to Login</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Family Setup Screen -->
+    <div id="familySetupScreen" class="family-setup" style="display: none;">
+        <div class="container">
+            <div class="card">
+                <h2>👨‍👩‍👧‍👦 Family Setup</h2>
+                <p>Create a new family group or join an existing one to start shopping together</p>
+                
+                <div style="margin: 30px 0;">
+                    <button id="createFamilyBtn" class="full-width primary" style="margin-bottom: 15px;">
+                        <span>🏠</span> Create New Family
+                    </button>
+                    <div class="divider">
+                        <span>or join existing</span>
+                    </div>
+                    <div class="join-family">
+                        <input type="text" id="familyCodeInput" placeholder="Enter family code">
+                        <button id="joinFamilyBtn" class="secondary">Join</button>
+                    </div>
+                </div>
+                
+                <button id="logoutFromSetup" class="full-width outline">Logout</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App Screen -->
+    <div id="appScreen" style="display: none;">
+        <header>
+            <div class="header-content">
+                <div class="app-title">
+                    <h1>🛒 FamilyGrocer</h1>
+                    <div class="sync-status">
+                        <div class="online-dot"></div>
+                        <span>Live Sync</span>
+                    </div>
+                </div>
+                <div class="family-info">
+                    <div class="stats">
+                        <div class="stat-item">
+                            <span class="stat-value" id="total-items">0</span>
+                            <span class="stat-label">Items</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value" id="completed-items">0</span>
+                            <span class="stat-label">Done</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value" id="monthly-expense">₹0</span>
+                            <span class="stat-label">This Month</span>
+                        </div>
+                    </div>
+                    <div class="family-members" id="familyMembers">
+                        <!-- Family member avatars will be inserted here -->
+                    </div>
+                    <button class="logout-btn" id="headerLogout" title="Logout">🚪</button>
+                </div>
+            </div>
+        </header>
+
+        <div class="container">
+            <!-- List Tab -->
+            <div id="listTab" class="tab-content active">
+                <div class="total-cost">
+                    <h3>💰 Estimated Total Cost</h3>
+                    <div class="total-amount" id="estimated-total">₹0.00</div>
+                    <div class="monthly-summary">
+                        <span id="monthly-savings">Monthly spent: ₹0</span>
+                        <span id="budget-progress">0% of budget</span>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="add-item-form">
+                        <div class="input-group">
+                            <div class="smart-input-container">
+                                <input type="text" id="itemInput" placeholder="What do you need? (e.g., Organic Milk)" autocomplete="off">
+                                <button class="ai-assist-btn" id="aiAssistBtn" title="Get AI Suggestions">🤖</button>
+                            </div>
+                            <div class="form-grid">
+                                <input type="number" id="qtyInput" placeholder="Qty" min="1" value="1">
+                                <input type="number" id="priceInput" placeholder="Price (₹)" min="0" step="0.01">
+                            </div>
+                            <div class="form-grid">
+                                <select id="categorySelect">
+                                    <option value="uncategorized">📦 Select Category</option>
+                                    <option value="fruits">🍎 Fruits & Vegetables</option>
+                                    <option value="dairy">🥛 Dairy & Eggs</option>
+                                    <option value="meat">🍗 Meat & Fish</option>
+                                    <option value="bakery">🍞 Bakery</option>
+                                    <option value="beverages">🥤 Beverages</option>
+                                    <option value="snacks">🍿 Snacks</option>
+                                    <option value="household">🏠 Household</option>
+                                    <option value="personal">🧴 Personal Care</option>
+                                    <option value="frozen">🧊 Frozen Foods</option>
+                                    <option value="grains">🌾 Grains & Pulses</option>
+                                    <option value="other">📦 Other</option>
+                                </select>
+                                <input type="date" id="dateInput">
+                            </div>
+                            <div class="form-options">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="urgentCheckbox"> 
+                                    <span class="checkmark"></span>
+                                    🚨 Mark as urgent
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="repeatCheckbox">
+                                    <span class="checkmark"></span>
+                                    🔄 Repeat weekly
+                                </label>
+                            </div>
+                            <div class="price-prediction" id="pricePrediction"></div>
+                        </div>
+                        <button id="addItemBtn" class="primary">
+                            <span>➕</span> Add Item
+                        </button>
+                    </div>
+                </div>
+
+                <!-- AI Suggestions Container -->
+                <div class="ai-suggestions" id="aiSuggestions">
+                    <div class="suggestion-title">
+                        <span>🤖 Smart Suggestions</span>
+                        <button class="close-suggestions" id="closeSuggestions">×</button>
+                    </div>
+                    <div id="suggestionItems" class="suggestion-items">
+                        <!-- AI suggestions will appear here -->
+                    </div>
+                </div>
+
+                <div class="search-bar">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" id="searchInput" placeholder="Search items...">
+                    <button class="clear-search" id="clearSearch">Clear</button>
+                </div>
+
+                <div class="categories-scroll">
+                    <div class="categories">
+                        <button class="category-btn active" data-category="all">📦 All Items</button>
+                        <button class="category-btn" data-category="fruits">🍎 Fruits & Veg</button>
+                        <button class="category-btn" data-category="dairy">🥛 Dairy</button>
+                        <button class="category-btn" data-category="meat">🍗 Meat & Fish</button>
+                        <button class="category-btn" data-category="bakery">🍞 Bakery</button>
+                        <button class="category-btn" data-category="urgent">🚨 Urgent</button>
+                        <button class="category-btn" data-category="claimed">🛒 Claimed</button>
+                        <button class="category-btn" data-category="recurring">🔁 Recurring</button>
+                    </div>
+                </div>
+
+                <div class="grocery-list">
+                    <div class="list-section">
+                        <h2 class="section-title">
+                            🛒 To Buy 
+                            <span id="pending-count">(0)</span>
+                            <button class="section-action" id="clearCompleted">Clear Completed</button>
+                        </h2>
+                        <div id="pending-items"></div>
+                    </div>
+
+                    <div class="list-section completed-section">
+                        <h2 class="section-title">
+                            ✅ Completed This Month 
+                            <span id="completed-count">(0)</span>
+                            <button class="section-action" id="toggleCompleted">Show</button>
+                        </h2>
+                        <div id="completed-items" style="display: none;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analytics Tab -->
+            <div id="analyticsTab" class="tab-content">
+                <div class="card">
+                    <h2 class="section-title">📊 Monthly Analytics</h2>
+                    <div class="analytics-grid">
+                        <div class="metric-card">
+                            <div class="metric-value" id="totalSpent">₹0</div>
+                            <div class="metric-label">Total Spent</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value" id="itemsBought">0</div>
+                            <div class="metric-label">Items Bought</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value" id="avgSpend">₹0</div>
+                            <div class="metric-label">Avg. per Item</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value" id="savings">₹0</div>
+                            <div class="metric-label">Monthly Savings</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>📈 Spending by Category</h3>
+                    <div id="categoryChart" class="category-chart">
+                        <!-- Chart will be rendered here -->
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>🛍️ Recent Purchases</h3>
+                    <div id="recentPurchases" class="recent-purchases">
+                        <!-- Recent purchases list -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Family Tab -->
+            <div id="familyTab" class="tab-content">
+                <div class="card">
+                    <h2 class="section-title">👨‍👩‍👧‍👦 Family Members</h2>
+                    <div id="familyMembersList">
+                        <!-- Family members list will be inserted here -->
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="family-info-settings">
+                        <h3>🔑 Family Code</h3>
+                        <p>Share this code with family members to let them join your group</p>
+                        <div class="family-code-display">
+                            <div class="family-code" id="familyCodeDisplay">Loading...</div>
+                            <button class="copy-btn outline" id="copyFamilyCode">Copy</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>🏆 Family Stats</h3>
+                    <div class="family-stats">
+                        <div class="family-stat">
+                            <span class="stat-label">Most Active Shopper</span>
+                            <span class="stat-value" id="topShopper">-</span>
+                        </div>
+                        <div class="family-stat">
+                            <span class="stat-label">Total Family Items</span>
+                            <span class="stat-value" id="familyTotalItems">0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Tab -->
+            <div id="settingsTab" class="tab-content">
+                <div class="card">
+                    <div class="settings-content">
+                        <div class="user-info">
+                            <div class="user-avatar-large" id="userAvatarLarge">👤</div>
+                            <div class="user-details">
+                                <h3 id="userNameDisplay">User Name</h3>
+                                <p id="userEmailDisplay">user@example.com</p>
+                                <span class="user-role">Family Member</span>
+                            </div>
+                        </div>
+                        
+                        <div class="settings-section">
+                            <h3 class="settings-title">⚙️ Account Settings</h3>
+                            <button class="settings-btn" id="changeNameBtn">
+                                <span>👤</span> Change Display Name
+                            </button>
+                            <button class="settings-btn" id="setBudgetBtn">
+                                <span>💰</span> Set Monthly Budget
+                            </button>
+                            <button class="settings-btn" id="notificationSettings">
+                                <span>🔔</span> Notification Settings
+                            </button>
+                        </div>
+                        
+                        <div class="settings-section">
+                            <h3 class="settings-title">👨‍👩‍👧‍👦 Family Settings</h3>
+                            <button class="settings-btn" id="inviteMemberBtn">
+                                <span>📧</span> Invite Family Member
+                            </button>
+                            <button class="settings-btn outline" id="leaveFamilyBtn">
+                                <span>🚪</span> Leave Family Group
+                            </button>
+                        </div>
+                        
+                        <div class="danger-zone">
+                            <h3>⚠️ Danger Zone</h3>
+                            <button class="settings-btn danger" id="exportDataBtn">
+                                <span>📤</span> Export Shopping Data
+                            </button>
+                            <button class="settings-btn danger" id="logoutBtn">
+                                <span>🔒</span> Logout
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bottom-nav">
+            <button class="nav-btn active" data-tab="list">
+                <span>🛒</span>
+                <span>List</span>
+            </button>
+            <button class="nav-btn" data-tab="analytics">
+                <span>📊</span>
+                <span>Analytics</span>
+            </button>
+            <button class="nav-btn" data-tab="family">
+                <span>👨‍👩‍👧‍👦</span>
+                <span>Family</span>
+            </button>
+            <button class="nav-btn" data-tab="settings">
+                <span>⚙️</span>
+                <span>Settings</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast"></div>
+
+    <!-- JavaScript -->
+    <script src="app.js"></script>
+</body>
+</html>
