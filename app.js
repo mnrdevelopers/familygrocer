@@ -49,7 +49,7 @@ const logoutFromSetup = document.getElementById('logoutFromSetup');
 // Main app elements
 const itemInput = document.getElementById('itemInput');
 const qtyInput = document.getElementById('qtyInput');
-const priceInput = document.getElementById('priceInput');
+const unitSelect = document.getElementById('unitSelect');
 const categorySelect = document.getElementById('categorySelect');
 const dateInput = document.getElementById('dateInput');
 const urgentCheckbox = document.getElementById('urgentCheckbox');
@@ -62,12 +62,10 @@ const clearSearch = document.getElementById('clearSearch');
 const categoryButtons = document.querySelectorAll('.category-btn');
 const totalItemsSpan = document.getElementById('total-items');
 const completedItemsSpan = document.getElementById('completed-items');
-const estimatedTotalSpan = document.getElementById('estimated-total');
+const monthlyItemsSpan = document.getElementById('monthly-items');
 const pendingCountSpan = document.getElementById('pending-count');
 const completedCountSpan = document.getElementById('completed-count');
-const monthlyExpenseSpan = document.getElementById('monthly-expense');
-const monthlySavingsSpan = document.getElementById('monthly-savings');
-const budgetProgressSpan = document.getElementById('budget-progress');
+const claimedCountSpan = document.getElementById('claimed-count');
 const familyMembersContainer = document.getElementById('familyMembers');
 const familyMembersList = document.getElementById('familyMembersList');
 const familyCodeDisplay = document.getElementById('familyCodeDisplay');
@@ -83,24 +81,25 @@ const logoutBtn = document.getElementById('logoutBtn');
 const headerLogout = document.getElementById('headerLogout');
 const clearCompleted = document.getElementById('clearCompleted');
 const toggleCompleted = document.getElementById('toggleCompleted');
+const addPriceBtn = document.getElementById('addPriceBtn');
 const toast = document.getElementById('toast');
 
-// Analytics elements
-const totalSpentSpan = document.getElementById('totalSpent');
-const itemsBoughtSpan = document.getElementById('itemsBought');
-const avgSpendSpan = document.getElementById('avgSpend');
-const savingsSpan = document.getElementById('savings');
-const categoryChart = document.getElementById('categoryChart');
-const recentPurchases = document.getElementById('recentPurchases');
+// Purchase-related elements
+const purchaseItemSelect = document.getElementById('purchaseItemSelect');
+const purchasePrice = document.getElementById('purchasePrice');
+const purchaseStore = document.getElementById('purchaseStore');
+const purchaseDate = document.getElementById('purchaseDate');
+const savePriceBtn = document.getElementById('savePriceBtn');
+const monthlyPurchasesSpan = document.getElementById('monthly-purchases');
+const monthlyTotalSpan = document.getElementById('monthly-total');
+const monthlyAverageSpan = document.getElementById('monthly-average');
+const recentPurchasesList = document.getElementById('recent-purchases-list');
+
+// Family stats elements
 const topShopperSpan = document.getElementById('topShopper');
 const familyTotalItemsSpan = document.getElementById('familyTotalItems');
-
-// AI Elements
-const aiSuggestions = document.getElementById('aiSuggestions');
-const suggestionItems = document.getElementById('suggestionItems');
-const aiAssistBtn = document.getElementById('aiAssistBtn');
-const closeSuggestions = document.getElementById('closeSuggestions');
-const pricePrediction = document.getElementById('pricePrediction');
+const familyPurchasedItemsSpan = document.getElementById('familyPurchasedItems');
+const familyUrgentItemsSpan = document.getElementById('familyUrgentItems');
 
 // Tab elements
 const tabContents = document.querySelectorAll('.tab-content');
@@ -115,134 +114,8 @@ let currentFilter = 'all';
 let currentSearch = '';
 let itemsUnsubscribe = null;
 let familyUnsubscribe = null;
-let userBudget = 5000; // Default monthly budget
 let completedVisible = false;
-let monthlyExpenses = [];
 let userPreferences = {};
-
-// AI Configuration
-const AI_CONFIG = {
-    useLocalML: true,
-};
-
-// AI Service
-const AIService = {
-    debounce(func, wait) {
-        let timeout;
-        return function executedFunction(...args) {
-            const later = () => {
-                clearTimeout(timeout);
-                func(...args);
-            };
-            clearTimeout(timeout);
-            timeout = setTimeout(later, wait);
-        };
-    },
-
-    predictCategory(itemName) {
-        const categories = {
-            'fruits': ['apple', 'banana', 'orange', 'mango', 'grape', 'berry', 'fruit', 'pineapple', 'watermelon'],
-            'vegetables': ['potato', 'tomato', 'onion', 'carrot', 'spinach', 'vegetable', 'cabbage', 'broccoli'],
-            'dairy': ['milk', 'cheese', 'yogurt', 'butter', 'cream', 'dairy', 'curd', 'paneer'],
-            'meat': ['chicken', 'beef', 'fish', 'pork', 'meat', 'seafood', 'mutton', 'egg'],
-            'bakery': ['bread', 'cake', 'cookie', 'pastry', 'bun', 'biscuit', 'croissant'],
-            'beverages': ['water', 'juice', 'soda', 'coffee', 'tea', 'drink', 'cola'],
-            'snacks': ['chips', 'chocolate', 'biscuit', 'cracker', 'snack', 'popcorn', 'nuts'],
-            'household': ['soap', 'detergent', 'cleaner', 'tissue', 'paper', 'shampoo'],
-            'personal': ['shampoo', 'toothpaste', 'deodorant', 'cream', 'lotion', 'perfume'],
-            'frozen': ['ice cream', 'frozen', 'pizza', 'fries', 'vegetables'],
-            'grains': ['rice', 'wheat', 'flour', 'pasta', 'noodles', 'cereal', 'oats'],
-            'other': []
-        };
-
-        itemName = itemName.toLowerCase();
-        
-        for (const [category, keywords] of Object.entries(categories)) {
-            if (keywords.some(keyword => itemName.includes(keyword))) {
-                return category;
-            }
-        }
-        
-        return 'other';
-    },
-
-    async predictPrice(itemName, category) {
-        const priceRanges = {
-            'fruits': { avg: 80 },
-            'vegetables': { avg: 40 },
-            'dairy': { avg: 100 },
-            'meat': { avg: 300 },
-            'bakery': { avg: 80 },
-            'beverages': { avg: 60 },
-            'snacks': { avg: 50 },
-            'household': { avg: 120 },
-            'personal': { avg: 200 },
-            'frozen': { avg: 150 },
-            'grains': { avg: 100 },
-            'other': { avg: 100 }
-        };
-
-        const range = priceRanges[category] || priceRanges.other;
-        
-        let multiplier = 1;
-        const lowerName = itemName.toLowerCase();
-        
-        if (lowerName.includes('organic')) multiplier *= 1.5;
-        if (lowerName.includes('premium')) multiplier *= 2;
-        if (lowerName.includes('imported')) multiplier *= 1.8;
-        
-        // Specific item prices
-        const specificPrices = {
-            'milk': 50, 'bread': 35, 'rice': 80, 'egg': 60, 'apple': 120,
-            'banana': 40, 'chicken': 200, 'fish': 300, 'oil': 150, 'sugar': 40
-        };
-
-        for (const [item, price] of Object.entries(specificPrices)) {
-            if (lowerName.includes(item)) return price.toString();
-        }
-        
-        return Math.round(range.avg * multiplier).toString();
-    },
-
-    getSmartSuggestions(itemName) {
-        const suggestionMap = {
-            'milk': [
-                { name: 'Curd', price: 40, category: 'dairy' },
-                { name: 'Butter', price: 50, category: 'dairy' },
-                { name: 'Cheese', price: 120, category: 'dairy' },
-                { name: 'Bread', price: 35, category: 'bakery' },
-                { name: 'Eggs', price: 60, category: 'meat' }
-            ],
-            'bread': [
-                { name: 'Butter', price: 50, category: 'dairy' },
-                { name: 'Jam', price: 80, category: 'snacks' },
-                { name: 'Eggs', price: 60, category: 'meat' },
-                { name: 'Milk', price: 50, category: 'dairy' },
-                { name: 'Cheese', price: 120, category: 'dairy' }
-            ],
-            'rice': [
-                { name: 'Lentils', price: 100, category: 'grains' },
-                { name: 'Oil', price: 150, category: 'other' },
-                { name: 'Spices', price: 50, category: 'other' },
-                { name: 'Vegetables', price: 80, category: 'vegetables' },
-                { name: 'Flour', price: 40, category: 'grains' }
-            ],
-            'default': [
-                { name: 'Cooking Oil', price: 150, category: 'other' },
-                { name: 'Salt', price: 20, category: 'other' },
-                { name: 'Sugar', price: 40, category: 'other' },
-                { name: 'Tea', price: 50, category: 'beverages' },
-                { name: 'Milk', price: 50, category: 'dairy' }
-            ]
-        };
-
-        itemName = itemName.toLowerCase();
-        for (const [key, suggestions] of Object.entries(suggestionMap)) {
-            if (itemName.includes(key)) return suggestions;
-        }
-        return suggestionMap.default;
-    }
-};
 
 // Initialize the app
 function init() {
@@ -252,23 +125,21 @@ function init() {
     const today = new Date();
     const formattedDate = today.toISOString().split('T')[0];
     if (dateInput) dateInput.value = formattedDate;
+    if (purchaseDate) purchaseDate.value = formattedDate;
     
     setupEventListeners();
-    initAI();
-    
-    // Check auth state after a brief loading period
-    setTimeout(() => {
-        checkAuthState();
-    }, 1500);
+    checkAuthState();
 }
 
 // Set up event listeners
 function setupEventListeners() {
     console.log('🔧 Setting up event listeners...');
     
-    // Authentication
+    // Authentication tabs
     if (loginTab) loginTab.addEventListener('click', () => switchAuthTab('login'));
     if (signupTab) signupTab.addEventListener('click', () => switchAuthTab('signup'));
+    
+    // Authentication buttons
     if (loginBtn) loginBtn.addEventListener('click', loginUser);
     if (signupBtn) signupBtn.addEventListener('click', signupUser);
     if (googleLoginBtn) googleLoginBtn.addEventListener('click', () => signInWithGoogle('login'));
@@ -287,6 +158,7 @@ function setupEventListeners() {
     if (itemInput) itemInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') addItem();
     });
+    
     if (searchInput) searchInput.addEventListener('input', handleSearch);
     if (clearSearch) clearSearch.addEventListener('click', clearSearchInput);
     
@@ -302,7 +174,7 @@ function setupEventListeners() {
         });
     }
     
-    // Navigation
+    // Navigation tabs
     if (navButtons) {
         navButtons.forEach(btn => {
             btn.addEventListener('click', () => {
@@ -311,6 +183,11 @@ function setupEventListeners() {
             });
         });
     }
+    
+    // Purchase-related listeners
+    if (savePriceBtn) savePriceBtn.addEventListener('click', savePurchasePrice);
+    if (purchaseItemSelect) purchaseItemSelect.addEventListener('change', updatePurchaseForm);
+    if (addPriceBtn) addPriceBtn.addEventListener('click', () => switchTab('purchases'));
     
     // Actions
     if (copyFamilyCodeBtn) copyFamilyCodeBtn.addEventListener('click', copyFamilyCode);
@@ -322,126 +199,6 @@ function setupEventListeners() {
     if (headerLogout) headerLogout.addEventListener('click', logoutUser);
     if (clearCompleted) clearCompleted.addEventListener('click', clearCompletedItems);
     if (toggleCompleted) toggleCompleted.addEventListener('click', toggleCompletedVisibility);
-}
-
-// Initialize AI functionality
-function initAI() {
-    console.log('🤖 Initializing AI features...');
-    
-    if (!itemInput || !aiAssistBtn) {
-        console.log('AI elements not found');
-        return;
-    }
-
-    const handleInput = AIService.debounce(async (e) => {
-        const itemName = e.target.value.trim();
-        
-        if (itemName.length < 2) {
-            hideAISuggestions();
-            if (pricePrediction) pricePrediction.textContent = '';
-            return;
-        }
-
-        if (pricePrediction) {
-            pricePrediction.innerHTML = '<div class="loading-spinner"></div> Predicting price...';
-        }
-
-        try {
-            const category = AIService.predictCategory(itemName);
-            const predictedPrice = await AIService.predictPrice(itemName, category);
-            
-            if (pricePrediction) {
-                pricePrediction.textContent = `Estimated price: ₹${predictedPrice}`;
-            }
-            
-            if (categorySelect) {
-                categorySelect.value = category;
-            }
-            
-            if (priceInput && !priceInput.value) {
-                priceInput.value = predictedPrice;
-            }
-        } catch (error) {
-            console.error('Price prediction error:', error);
-            if (pricePrediction) pricePrediction.textContent = 'Price prediction unavailable';
-        }
-    }, 800);
-
-    aiAssistBtn.addEventListener('click', async () => {
-        const itemName = itemInput.value.trim();
-        if (!itemName) {
-            showToast('Please enter an item name first');
-            return;
-        }
-        showAISuggestions(itemName);
-    });
-
-    if (closeSuggestions) {
-        closeSuggestions.addEventListener('click', hideAISuggestions);
-    }
-
-    itemInput.addEventListener('input', handleInput);
-
-    // Hide suggestions when clicking outside
-    document.addEventListener('click', (e) => {
-        if (aiSuggestions && !aiSuggestions.contains(e.target) && e.target !== itemInput && e.target !== aiAssistBtn) {
-            hideAISuggestions();
-        }
-    });
-}
-
-function showAISuggestions(itemName) {
-    if (!aiSuggestions || !suggestionItems) return;
-    
-    aiSuggestions.classList.add('active');
-    suggestionItems.innerHTML = '<div class="ai-loading"><div class="loading-spinner"></div>Getting smart suggestions...</div>';
-
-    setTimeout(() => {
-        const suggestions = AIService.getSmartSuggestions(itemName);
-        displaySuggestions(suggestions);
-    }, 500);
-}
-
-function hideAISuggestions() {
-    if (aiSuggestions) {
-        aiSuggestions.classList.remove('active');
-    }
-}
-
-function displaySuggestions(suggestions) {
-    if (!suggestions || !suggestionItems) return;
-    
-    if (suggestions.length === 0) {
-        suggestionItems.innerHTML = '<div class="ai-loading">No suggestions available</div>';
-        return;
-    }
-
-    suggestionItems.innerHTML = suggestions.map(suggestion => `
-        <div class="suggestion-item" data-name="${suggestion.name.replace(/"/g, '&quot;')}" data-price="${suggestion.price}" data-category="${suggestion.category}">
-            <div class="suggestion-name">${suggestion.name}</div>
-            <div class="suggestion-price">₹${suggestion.price}</div>
-            <div class="suggestion-category">${suggestion.category}</div>
-        </div>
-    `).join('');
-
-    // Add event listeners to suggestion items
-    suggestionItems.querySelectorAll('.suggestion-item').forEach(item => {
-        item.addEventListener('click', function() {
-            const name = this.getAttribute('data-name');
-            const price = this.getAttribute('data-price');
-            const category = this.getAttribute('data-category');
-            applySuggestion(name, price, category);
-        });
-    });
-}
-
-function applySuggestion(name, price, category) {
-    if (itemInput) itemInput.value = name;
-    if (priceInput) priceInput.value = price;
-    if (categorySelect) categorySelect.value = category;
-    hideAISuggestions();
-    if (itemInput) itemInput.focus();
-    showToast(`Added "${name}" to form`);
 }
 
 // Authentication functions
@@ -486,7 +243,6 @@ function signInWithGoogle(context) {
             console.log('Google sign-in successful:', user.email);
             
             if (context === 'signup') {
-                // Create user document for new signups
                 return db.collection('users').doc(user.uid).set({
                     name: user.displayName || 'User',
                     email: user.email,
@@ -535,10 +291,6 @@ function checkAuthState() {
             showScreen('auth');
             hideLoadingScreen();
         }
-    }, (error) => {
-        console.error('Auth state error:', error);
-        showScreen('auth');
-        hideLoadingScreen();
     });
 }
 
@@ -594,9 +346,7 @@ function showScreen(screen) {
             break;
         case 'app':
             if (appScreen) appScreen.style.display = 'block';
-            // Load user preferences and analytics when app screen is shown
             loadUserPreferences();
-            loadAnalytics();
             break;
     }
 }
@@ -642,13 +392,11 @@ function signupUser() {
     
     auth.createUserWithEmailAndPassword(email, password)
         .then((userCredential) => {
-            // Create user document
             return db.collection('users').doc(userCredential.user.uid).set({
                 name: name,
                 email: email,
                 createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                 preferences: {
-                    budget: 5000,
                     notifications: true
                 }
             });
@@ -671,15 +419,13 @@ function createFamily() {
         name: `${userName}'s Family`,
         createdBy: currentUser.uid,
         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-        members: [currentUser.uid],
-        monthlyBudget: 5000
+        members: [currentUser.uid]
     };
     
     showToast('Creating family...');
     
     db.collection('families').doc(familyCode).set(familyData)
     .then(() => {
-        // Update user document with family ID
         return db.collection('users').doc(currentUser.uid).set({
             familyId: familyCode,
             name: signupName ? signupName.value : currentUser.displayName || 'User',
@@ -713,20 +459,17 @@ function joinFamily() {
     
     showToast('Joining family...');
     
-    // Check if family exists
     db.collection('families').doc(familyCode).get()
         .then((doc) => {
             if (!doc.exists) {
                 throw new Error('Family not found. Check the code and try again.');
             }
             
-            // Add user to family members
             return db.collection('families').doc(familyCode).update({
                 members: firebase.firestore.FieldValue.arrayUnion(currentUser.uid)
             });
         })
         .then(() => {
-            // Update user document with family ID
             return db.collection('users').doc(currentUser.uid).update({
                 familyId: familyCode
             });
@@ -774,8 +517,9 @@ function loadFamilyData() {
             
             renderItems();
             updateStats();
-            updateMonthlyExpenses();
-            loadAnalytics();
+            updatePurchaseItemsList();
+            updateRecentPurchases();
+            updateFamilyStats();
         }, (error) => {
             console.error('Error listening to items:', error);
             showToast('Error loading items');
@@ -788,11 +532,6 @@ function loadFamilyData() {
                 const familyData = doc.data();
                 loadFamilyMembers(familyData.members);
                 if (familyCodeDisplay) familyCodeDisplay.textContent = currentFamily;
-                
-                // Update family budget
-                if (familyData.monthlyBudget) {
-                    userBudget = familyData.monthlyBudget;
-                }
             }
         }, (error) => {
             console.error('Error listening to family:', error);
@@ -834,10 +573,9 @@ function loadFamilyMembers(memberIds) {
 // Item management functions
 function addItem() {
     const name = itemInput ? itemInput.value.trim() : '';
-    const quantity = parseInt(qtyInput ? qtyInput.value : 1) || 1;
-    const price = parseFloat(priceInput ? priceInput.value : 0) || 0;
+    const quantity = parseFloat(qtyInput ? qtyInput.value : 1) || 1;
+    const unit = unitSelect ? unitSelect.value : 'pcs';
     const category = categorySelect ? categorySelect.value : 'uncategorized';
-    const dateNeeded = dateInput ? dateInput.value : '';
     const isUrgent = urgentCheckbox ? urgentCheckbox.checked : false;
     const isRecurring = repeatCheckbox ? repeatCheckbox.checked : false;
     
@@ -854,16 +592,21 @@ function addItem() {
     const itemData = {
         name,
         quantity,
-        price,
+        unit,
         category,
-        dateNeeded,
         isUrgent,
         isRecurring,
         completed: false,
         addedBy: currentUser.uid,
-        addedByName: 'User', // Show generic name instead of actual user name
+        addedByName: 'User',
         familyId: currentFamily,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        price: null,
+        purchaseDate: null,
+        store: null,
+        claimedBy: null,
+        claimedByName: null,
+        claimedAt: null
     };
     
     db.collection('items').add(itemData)
@@ -871,13 +614,13 @@ function addItem() {
         // Reset form
         if (itemInput) itemInput.value = '';
         if (qtyInput) qtyInput.value = '1';
-        if (priceInput) priceInput.value = '';
+        if (unitSelect) unitSelect.value = 'pcs';
         if (categorySelect) categorySelect.value = 'uncategorized';
         if (urgentCheckbox) urgentCheckbox.checked = false;
         if (repeatCheckbox) repeatCheckbox.checked = false;
         if (itemInput) itemInput.focus();
         
-        showToast('Item added successfully');
+        showToast('Item added to list successfully');
     })
     .catch((error) => {
         console.error('Error adding item:', error);
@@ -894,7 +637,7 @@ function toggleItem(id) {
             completed: newCompletedState,
             completedBy: newCompletedState ? currentUser.uid : null,
             completedAt: newCompletedState ? firebase.firestore.FieldValue.serverTimestamp() : null,
-            completedByName: newCompletedState ? 'User' : null // Generic name
+            completedByName: newCompletedState ? 'User' : null
         })
         .catch((error) => {
             console.error('Error updating item:', error);
@@ -906,7 +649,7 @@ function toggleItem(id) {
 function claimItem(id) {
     db.collection('items').doc(id).update({
         claimedBy: currentUser.uid,
-        claimedByName: 'User', // Generic name
+        claimedByName: 'User',
         claimedAt: firebase.firestore.FieldValue.serverTimestamp()
     })
     .then(() => {
@@ -946,7 +689,87 @@ function deleteItem(id) {
     }
 }
 
-// Render items based on current filter and search
+// Purchase price functions
+function savePurchasePrice() {
+    const itemId = purchaseItemSelect ? purchaseItemSelect.value : '';
+    const price = parseFloat(purchasePrice ? purchasePrice.value : 0);
+    const store = purchaseStore ? purchaseStore.value.trim() : '';
+    const date = purchaseDate ? purchaseDate.value : '';
+    
+    if (!itemId) {
+        showToast('Please select an item');
+        return;
+    }
+    
+    if (!price || price <= 0) {
+        showToast('Please enter a valid price');
+        return;
+    }
+    
+    if (!store) {
+        showToast('Please enter store name');
+        return;
+    }
+    
+    db.collection('items').doc(itemId).update({
+        price: price,
+        store: store,
+        purchaseDate: date,
+        completed: true,
+        completedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        completedBy: currentUser.uid,
+        completedByName: 'User'
+    })
+    .then(() => {
+        // Reset purchase form
+        if (purchasePrice) purchasePrice.value = '';
+        if (purchaseStore) purchaseStore.value = '';
+        if (purchaseItemSelect) purchaseItemSelect.value = '';
+        
+        showToast('Purchase price saved successfully');
+        updatePurchaseItemsList();
+    })
+    .catch((error) => {
+        console.error('Error saving price:', error);
+        showToast('Error saving price: ' + error.message);
+    });
+}
+
+function updatePurchaseItemsList() {
+    if (!purchaseItemSelect) return;
+    
+    // Get items that are completed but don't have prices yet
+    const unpricedItems = groceryItems.filter(item => 
+        item.completed && (!item.price || item.price === 0)
+    );
+    
+    purchaseItemSelect.innerHTML = '<option value="">-- Select purchased item --</option>';
+    
+    unpricedItems.forEach(item => {
+        const option = document.createElement('option');
+        option.value = item.id;
+        option.textContent = `${item.name} (${item.quantity} ${item.unit})`;
+        purchaseItemSelect.appendChild(option);
+    });
+    
+    // Show/hide add price button based on unpriced items
+    if (addPriceBtn) {
+        addPriceBtn.style.display = unpricedItems.length > 0 ? 'inline-block' : 'none';
+    }
+}
+
+function updatePurchaseForm() {
+    const itemId = purchaseItemSelect.value;
+    const item = groceryItems.find(item => item.id === itemId);
+    
+    if (item && purchaseDate) {
+        // Set purchase date to today if not already set
+        const today = new Date().toISOString().split('T')[0];
+        purchaseDate.value = today;
+    }
+}
+
+// Render items
 function renderItems() {
     if (!pendingItemsContainer || !completedItemsContainer) return;
     
@@ -982,17 +805,16 @@ function renderItems() {
         completedItemsContainer.innerHTML = `
             <div class="empty-state">
                 <div class="empty-state-icon">✅</div>
-                <p>No completed items yet</p>
+                <p>No purchased items yet</p>
             </div>
         `;
     }
     
-    // Add event listeners to the newly created elements
+    // Add event listeners
     addItemEventListeners();
     
     // Update counts
-    if (pendingCountSpan) pendingCountSpan.textContent = `(${pendingItems.length})`;
-    if (completedCountSpan) completedCountSpan.textContent = `(${completedItems.length})`;
+    updateStats();
 }
 
 function focusItemInput() {
@@ -1061,12 +883,12 @@ function createItemHTML(item) {
         'other': 'Other'
     };
     
-    const totalPrice = (item.quantity * item.price).toFixed(2);
-    const formattedDate = formatDate(item.dateNeeded);
+    const formattedDate = formatDate(item.purchaseDate);
     const isUrgent = item.isUrgent && !item.completed;
     const isClaimed = item.claimedBy && !item.completed;
     const isAddedByCurrentUser = item.addedBy === currentUser.uid;
     const isClaimedByCurrentUser = item.claimedBy === currentUser.uid;
+    const hasPrice = item.price && item.price > 0;
     
     return `
         <div class="grocery-item ${item.completed ? 'checked' : ''} ${isUrgent ? 'urgent' : ''} ${isClaimed ? 'claimed' : ''}" data-id="${item.id}">
@@ -1077,14 +899,14 @@ function createItemHTML(item) {
                 <div class="item-name">
                     ${item.name} 
                     ${isUrgent ? '<span class="urgent-badge">URGENT</span>' : ''}
-                    ${isClaimed ? `<span class="claimed-badge">CLAIMED</span>` : ''}
+                    ${isClaimed ? '<span class="claimed-badge">CLAIMED</span>' : ''}
                     ${item.isRecurring ? '<span class="claimed-badge" style="background: var(--accent);">🔁</span>' : ''}
+                    ${hasPrice ? `<span class="item-price-added">₹${item.price}</span>` : ''}
                 </div>
                 <div class="item-meta">
                     <span class="item-category">${categoryLabels[item.category] || item.category}</span>
-                    <span class="item-qty">📦 ${item.quantity}</span>
-                    ${item.price > 0 ? `<span class="item-price">₹${item.price} × ${item.quantity} = ₹${totalPrice}</span>` : ''}
-                    <span class="item-date">📅 ${formattedDate}</span>
+                    <span class="item-qty">${item.quantity} ${item.unit}</span>
+                    ${hasPrice ? `<span class="item-store">${item.store || ''} • ${formattedDate}</span>` : ''}
                     <span class="item-added-by">
                         <div class="user-avatar">U</div>
                         Added by User
@@ -1135,8 +957,9 @@ function switchTab(tabName) {
     });
     
     // Load tab-specific data
-    if (tabName === 'analytics') {
-        loadAnalytics();
+    if (tabName === 'purchases') {
+        updatePurchaseItemsList();
+        updateRecentPurchases();
     } else if (tabName === 'family') {
         loadFamilyTab();
     } else if (tabName === 'settings') {
@@ -1166,9 +989,6 @@ function loadFamilyTab() {
         `;
         familyMembersList.appendChild(memberElement);
     });
-    
-    // Update family stats
-    updateFamilyStats();
 }
 
 function loadSettingsTab() {
@@ -1186,7 +1006,6 @@ function loadSettingsTab() {
                 // Load preferences
                 if (userData.preferences) {
                     userPreferences = userData.preferences;
-                    userBudget = userData.preferences.budget || 5000;
                 }
             }
         })
@@ -1195,171 +1014,130 @@ function loadSettingsTab() {
         });
 }
 
-// Analytics functions
-function loadAnalytics() {
-    updateMonthlyExpenses();
-    updateCategoryChart();
-    updateRecentPurchases();
-    updateFamilyStats();
-}
-
-function updateMonthlyExpenses() {
+// Stats and analytics
+function updateStats() {
+    const total = groceryItems.length;
+    const completed = groceryItems.filter(item => item.completed).length;
+    const claimed = groceryItems.filter(item => item.claimedBy && !item.completed).length;
+    const pending = total - completed;
+    
+    // Monthly stats
     const now = new Date();
     const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
     
-    // Filter items from current month
     const monthlyItems = groceryItems.filter(item => {
-        if (!item.completed || !item.completedAt) return false;
-        
+        if (!item.completedAt) return false;
         const completedDate = item.completedAt.toDate();
         return completedDate.getMonth() === currentMonth && 
                completedDate.getFullYear() === currentYear;
     });
     
-    const totalSpent = monthlyItems.reduce((sum, item) => sum + (item.quantity * item.price), 0);
-    const itemsBought = monthlyItems.length;
-    const avgSpend = itemsBought > 0 ? totalSpent / itemsBought : 0;
-    const savings = userBudget - totalSpent;
+    const purchasedItems = groceryItems.filter(item => item.price && item.price > 0);
+    const monthlyPurchases = purchasedItems.filter(item => {
+        if (!item.purchaseDate) return false;
+        const purchaseDate = new Date(item.purchaseDate);
+        return purchaseDate.getMonth() === currentMonth && 
+               purchaseDate.getFullYear() === currentYear;
+    });
+    
+    const monthlyTotal = monthlyPurchases.reduce((sum, item) => sum + (item.price || 0), 0);
+    const monthlyAverage = monthlyPurchases.length > 0 ? monthlyTotal / monthlyPurchases.length : 0;
     
     // Update UI
-    if (totalSpentSpan) totalSpentSpan.textContent = `₹${totalSpent.toFixed(0)}`;
-    if (itemsBoughtSpan) itemsBoughtSpan.textContent = itemsBought;
-    if (avgSpendSpan) avgSpendSpan.textContent = `₹${avgSpend.toFixed(0)}`;
-    if (savingsSpan) savingsSpan.textContent = `₹${Math.max(0, savings).toFixed(0)}`;
-    if (monthlyExpenseSpan) monthlyExpenseSpan.textContent = `₹${totalSpent.toFixed(0)}`;
+    if (totalItemsSpan) totalItemsSpan.textContent = total;
+    if (completedItemsSpan) completedItemsSpan.textContent = completed;
+    if (monthlyItemsSpan) monthlyItemsSpan.textContent = monthlyItems.length;
+    if (claimedCountSpan) claimedCountSpan.textContent = claimed;
+    if (pendingCountSpan) pendingCountSpan.textContent = pending;
+    if (completedCountSpan) completedCountSpan.textContent = completed;
     
-    // Update budget progress
-    const budgetUsage = (totalSpent / userBudget) * 100;
-    if (monthlySavingsSpan) monthlySavingsSpan.textContent = `Monthly spent: ₹${totalSpent.toFixed(0)}`;
-    if (budgetProgressSpan) budgetProgressSpan.textContent = `${Math.min(100, budgetUsage).toFixed(0)}% of budget`;
-}
-
-function updateCategoryChart() {
-    if (!categoryChart) return;
-    
-    const completedItems = groceryItems.filter(item => item.completed);
-    const categoryTotals = {};
-    
-    completedItems.forEach(item => {
-        const category = item.category || 'other';
-        const total = item.quantity * item.price;
-        categoryTotals[category] = (categoryTotals[category] || 0) + total;
-    });
-    
-    const totalSpent = Object.values(categoryTotals).reduce((sum, total) => sum + total, 0);
-    
-    let chartHTML = '';
-    Object.entries(categoryTotals).forEach(([category, total]) => {
-        const percentage = totalSpent > 0 ? (total / totalSpent) * 100 : 0;
-        chartHTML += `
-            <div class="chart-bar">
-                <div class="chart-label">${category}</div>
-                <div class="chart-progress">
-                    <div class="chart-fill" style="width: ${percentage}%"></div>
-                </div>
-                <div class="chart-value">₹${total.toFixed(0)}</div>
-            </div>
-        `;
-    });
-    
-    categoryChart.innerHTML = chartHTML || '<p>No spending data available</p>';
+    // Purchase stats
+    if (monthlyPurchasesSpan) monthlyPurchasesSpan.textContent = monthlyPurchases.length;
+    if (monthlyTotalSpan) monthlyTotalSpan.textContent = `₹${monthlyTotal.toFixed(0)}`;
+    if (monthlyAverageSpan) monthlyAverageSpan.textContent = `₹${monthlyAverage.toFixed(0)}`;
 }
 
 function updateRecentPurchases() {
-    if (!recentPurchases) return;
+    if (!recentPurchasesList) return;
     
-    const completedItems = groceryItems
-        .filter(item => item.completed)
+    const purchasedItems = groceryItems
+        .filter(item => item.price && item.price > 0)
         .sort((a, b) => {
-            const dateA = a.completedAt?.toDate() || new Date(0);
-            const dateB = b.completedAt?.toDate() || new Date(0);
+            const dateA = a.purchaseDate ? new Date(a.purchaseDate) : new Date(0);
+            const dateB = b.purchaseDate ? new Date(b.purchaseDate) : new Date(0);
             return dateB - dateA;
         })
-        .slice(0, 10); // Show last 10 purchases
+        .slice(0, 10);
     
-    if (completedItems.length === 0) {
-        recentPurchases.innerHTML = '<p>No recent purchases</p>';
+    if (purchasedItems.length === 0) {
+        recentPurchasesList.innerHTML = '<p class="empty-state">No purchases yet</p>';
         return;
     }
     
-    recentPurchases.innerHTML = completedItems.map(item => `
-        <div class="purchase-item">
+    recentPurchasesList.innerHTML = purchasedItems.map(item => `
+        <div class="purchase-record">
             <div class="purchase-info">
-                <div class="purchase-name">${item.name}</div>
-                <div class="purchase-meta">${formatDate(item.completedAt?.toDate())} • ${item.quantity} × ₹${item.price}</div>
+                <div class="purchase-item-name">${item.name}</div>
+                <div class="purchase-details">${item.quantity} ${item.unit} • ${item.store || 'Unknown store'} • ${formatDate(item.purchaseDate)}</div>
             </div>
-            <div class="purchase-price">₹${(item.quantity * item.price).toFixed(2)}</div>
+            <div class="purchase-price">₹${item.price.toFixed(2)}</div>
         </div>
     `).join('');
 }
 
 function updateFamilyStats() {
-    if (!topShopperSpan || !familyTotalItemsSpan) return;
+    if (!topShopperSpan || !familyTotalItemsSpan || !familyPurchasedItemsSpan || !familyUrgentItemsSpan) return;
     
-    // Simple implementation - in real app, you'd track this properly
     const completedItems = groceryItems.filter(item => item.completed);
-    familyTotalItemsSpan.textContent = completedItems.length;
-    topShopperSpan.textContent = 'User'; // Generic name
-}
-
-function updateFamilyStats() {
-    // Find most active shopper
-    const shopperStats = {};
-    groceryItems.forEach(item => {
-        if (item.completed && item.completedByName) {
-            shopperStats[item.completedByName] = (shopperStats[item.completedByName] || 0) + 1;
+    const purchasedItems = groceryItems.filter(item => item.price && item.price > 0);
+    const urgentItems = groceryItems.filter(item => item.isUrgent);
+    
+    // Simple implementation for top shopper
+    const shopperCounts = {};
+    completedItems.forEach(item => {
+        if (item.completedByName) {
+            shopperCounts[item.completedByName] = (shopperCounts[item.completedByName] || 0) + 1;
         }
     });
     
     let topShopper = 'User';
-    let maxItems = 0;
-    
-    Object.entries(shopperStats).forEach(([shopper, count]) => {
-        if (count > maxItems) {
-            maxItems = count;
+    let maxCount = 0;
+    Object.entries(shopperCounts).forEach(([shopper, count]) => {
+        if (count > maxCount) {
+            maxCount = count;
             topShopper = shopper;
         }
     });
     
-    if (topShopperSpan) topShopperSpan.textContent = topShopper;
-    if (familyTotalItemsSpan) {
-        familyTotalItemsSpan.textContent = groceryItems.filter(item => item.completed).length;
-    }
-}
-
-function updateStats() {
-    const total = groceryItems.length;
-    const completed = groceryItems.filter(item => item.completed).length;
-    const totalCost = groceryItems
-        .filter(item => !item.completed)
-        .reduce((sum, item) => sum + (item.quantity * item.price), 0);
-    
-    if (totalItemsSpan) totalItemsSpan.textContent = total;
-    if (completedItemsSpan) completedItemsSpan.textContent = completed;
-    if (estimatedTotalSpan) estimatedTotalSpan.textContent = `₹${totalCost.toFixed(2)}`;
+    topShopperSpan.textContent = topShopper;
+    familyTotalItemsSpan.textContent = groceryItems.length;
+    familyPurchasedItemsSpan.textContent = purchasedItems.length;
+    familyUrgentItemsSpan.textContent = urgentItems.length;
 }
 
 // Utility functions
-function formatDate(date) {
-    if (!date) return 'No date';
+function formatDate(dateString) {
+    if (!dateString) return 'No date';
     
-    if (typeof date === 'string') {
-        date = new Date(date);
+    try {
+        const date = new Date(dateString);
+        const now = new Date();
+        const diffTime = Math.abs(now - date);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        
+        if (diffDays === 0) return 'Today';
+        if (diffDays === 1) return 'Yesterday';
+        if (diffDays < 7) return `${diffDays} days ago`;
+        
+        return date.toLocaleDateString('en-IN', { 
+            day: 'numeric', 
+            month: 'short',
+            year: 'numeric'
+        });
+    } catch (error) {
+        return 'Invalid date';
     }
-    
-    const now = new Date();
-    const diffTime = Math.abs(now - date);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    if (diffDays === 0) return 'Today';
-    if (diffDays === 1) return date > now ? 'Tomorrow' : 'Yesterday';
-    if (diffDays < 7) return `${diffDays} days ago`;
-    
-    return date.toLocaleDateString('en-IN', { 
-        day: 'numeric', 
-        month: 'short' 
-    });
 }
 
 function showToast(message) {
@@ -1381,7 +1159,6 @@ function loadUserPreferences() {
         .then((doc) => {
             if (doc.exists && doc.data().preferences) {
                 userPreferences = doc.data().preferences;
-                userBudget = userPreferences.budget || 5000;
             }
         })
         .catch(error => {
@@ -1390,19 +1167,15 @@ function loadUserPreferences() {
 }
 
 function setMonthlyBudget() {
-    const newBudget = prompt('Enter your monthly budget (₹):', userBudget);
+    const newBudget = prompt('Enter your monthly budget (₹):', userPreferences.budget || 5000);
     if (newBudget && !isNaN(newBudget) && newBudget > 0) {
-        userBudget = parseInt(newBudget);
-        
-        // Update user preferences
-        userPreferences.budget = userBudget;
+        userPreferences.budget = parseInt(newBudget);
         
         db.collection('users').doc(currentUser.uid).set({
             preferences: userPreferences
         }, { merge: true })
         .then(() => {
-            showToast(`Monthly budget set to ₹${userBudget}`);
-            updateMonthlyExpenses();
+            showToast(`Monthly budget set to ₹${userPreferences.budget}`);
         })
         .catch(error => {
             console.error('Error updating budget:', error);
@@ -1453,7 +1226,6 @@ function exportShoppingData() {
         exportedAt: new Date().toISOString(),
         familyCode: currentFamily,
         items: groceryItems,
-        monthlyExpenses: monthlyExpenses,
         preferences: userPreferences
     };
     
