@@ -140,7 +140,7 @@
                             <span class="stat-label">Done</span>
                         </div>
                         <div class="stat-item">
-                            <span class="stat-value" id="monthly-expense">₹0</span>
+                            <span class="stat-value" id="monthly-items">0</span>
                             <span class="stat-label">This Month</span>
                         </div>
                     </div>
@@ -155,27 +155,45 @@
         <div class="container">
             <!-- List Tab -->
             <div id="listTab" class="tab-content active">
-                <div class="total-cost">
-                    <h3>💰 Estimated Total Cost</h3>
-                    <div class="total-amount" id="estimated-total">₹0.00</div>
-                    <div class="monthly-summary">
-                        <span id="monthly-savings">Monthly spent: ₹0</span>
-                        <span id="budget-progress">0% of budget</span>
+                <div class="shopping-stats">
+                    <h3>📊 Shopping Progress</h3>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-number" id="pending-count">0</div>
+                            <div class="stat-label">To Buy</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="completed-count">0</div>
+                            <div class="stat-label">Purchased</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="claimed-count">0</div>
+                            <div class="stat-label">Claimed</div>
+                        </div>
                     </div>
                 </div>
 
                 <div class="card">
                     <div class="add-item-form">
                         <div class="input-group">
-                            <div class="smart-input-container">
-                                <input type="text" id="itemInput" placeholder="What do you need? (e.g., Organic Milk)" autocomplete="off">
-                                <button class="ai-assist-btn" id="aiAssistBtn" title="Get AI Suggestions">🤖</button>
-                            </div>
+                            <input type="text" id="itemInput" placeholder="What do you need? (e.g., Milk, Apples, Bread)" autocomplete="off">
+                            
                             <div class="form-grid">
-                                <input type="number" id="qtyInput" placeholder="Qty" min="1" value="1">
-                                <input type="number" id="priceInput" placeholder="Price (₹)" min="0" step="0.01">
-                            </div>
-                            <div class="form-grid">
+                                <div class="input-with-unit">
+                                    <input type="number" id="qtyInput" placeholder="Quantity" min="0.1" step="0.1" value="1">
+                                    <select id="unitSelect" class="unit-select">
+                                        <option value="pcs">pcs</option>
+                                        <option value="kg">kg</option>
+                                        <option value="g">g</option>
+                                        <option value="l">l</option>
+                                        <option value="ml">ml</option>
+                                        <option value="pack">pack</option>
+                                        <option value="bottle">bottle</option>
+                                        <option value="box">box</option>
+                                        <option value="dozen">dozen</option>
+                                        <option value="bunch">bunch</option>
+                                    </select>
+                                </div>
                                 <select id="categorySelect">
                                     <option value="uncategorized">📦 Select Category</option>
                                     <option value="fruits">🍎 Fruits & Vegetables</option>
@@ -190,8 +208,8 @@
                                     <option value="grains">🌾 Grains & Pulses</option>
                                     <option value="other">📦 Other</option>
                                 </select>
-                                <input type="date" id="dateInput">
                             </div>
+                            
                             <div class="form-options">
                                 <label class="checkbox-label">
                                     <input type="checkbox" id="urgentCheckbox"> 
@@ -204,22 +222,10 @@
                                     🔄 Repeat weekly
                                 </label>
                             </div>
-                            <div class="price-prediction" id="pricePrediction"></div>
                         </div>
                         <button id="addItemBtn" class="primary">
-                            <span>➕</span> Add Item
+                            <span>➕</span> Add to List
                         </button>
-                    </div>
-                </div>
-
-                <!-- AI Suggestions Container -->
-                <div class="ai-suggestions" id="aiSuggestions">
-                    <div class="suggestion-title">
-                        <span>🤖 Smart Suggestions</span>
-                        <button class="close-suggestions" id="closeSuggestions">×</button>
-                    </div>
-                    <div id="suggestionItems" class="suggestion-items">
-                        <!-- AI suggestions will appear here -->
                     </div>
                 </div>
 
@@ -246,16 +252,16 @@
                     <div class="list-section">
                         <h2 class="section-title">
                             🛒 To Buy 
-                            <span id="pending-count">(0)</span>
-                            <button class="section-action" id="clearCompleted">Clear Completed</button>
+                            <span id="pending-badge">(0)</span>
+                            <button class="section-action" id="addPriceBtn" style="display: none;">Add Prices</button>
                         </h2>
                         <div id="pending-items"></div>
                     </div>
 
                     <div class="list-section completed-section">
                         <h2 class="section-title">
-                            ✅ Completed This Month 
-                            <span id="completed-count">(0)</span>
+                            ✅ Purchased Items 
+                            <span id="completed-badge">(0)</span>
                             <button class="section-action" id="toggleCompleted">Show</button>
                         </h2>
                         <div id="completed-items" style="display: none;"></div>
@@ -263,41 +269,64 @@
                 </div>
             </div>
 
-            <!-- Analytics Tab -->
-            <div id="analyticsTab" class="tab-content">
+            <!-- Purchases Tab -->
+            <div id="purchasesTab" class="tab-content">
                 <div class="card">
-                    <h2 class="section-title">📊 Monthly Analytics</h2>
-                    <div class="analytics-grid">
-                        <div class="metric-card">
-                            <div class="metric-value" id="totalSpent">₹0</div>
-                            <div class="metric-label">Total Spent</div>
+                    <h2 class="section-title">💰 Add Purchase Prices</h2>
+                    <p class="purchase-help">Add prices for items you've purchased. This helps track your spending.</p>
+                    
+                    <div class="purchase-form">
+                        <div class="form-group">
+                            <label>Select Item to Add Price</label>
+                            <select id="purchaseItemSelect" class="purchase-select">
+                                <option value="">-- Select purchased item --</option>
+                            </select>
                         </div>
-                        <div class="metric-card">
-                            <div class="metric-value" id="itemsBought">0</div>
-                            <div class="metric-label">Items Bought</div>
+                        
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Price (₹)</label>
+                                <input type="number" id="purchasePrice" placeholder="0.00" min="0" step="0.01">
+                            </div>
+                            <div class="form-group">
+                                <label>Store Name</label>
+                                <input type="text" id="purchaseStore" placeholder="e.g., Supermarket, Local store">
+                            </div>
                         </div>
-                        <div class="metric-card">
-                            <div class="metric-value" id="avgSpend">₹0</div>
-                            <div class="metric-label">Avg. per Item</div>
+                        
+                        <div class="form-group">
+                            <label>Purchase Date</label>
+                            <input type="date" id="purchaseDate">
                         </div>
-                        <div class="metric-card">
-                            <div class="metric-value" id="savings">₹0</div>
-                            <div class="metric-label">Monthly Savings</div>
-                        </div>
+                        
+                        <button id="savePriceBtn" class="primary full-width">
+                            💾 Save Purchase Info
+                        </button>
                     </div>
                 </div>
 
                 <div class="card">
-                    <h3>📈 Spending by Category</h3>
-                    <div id="categoryChart" class="category-chart">
-                        <!-- Chart will be rendered here -->
+                    <h3>📈 Monthly Purchase Summary</h3>
+                    <div class="summary-stats">
+                        <div class="summary-item">
+                            <span class="summary-label">Items Purchased</span>
+                            <span class="summary-value" id="monthly-purchases">0</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">Total Spent</span>
+                            <span class="summary-value" id="monthly-total">₹0</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">Average per Item</span>
+                            <span class="summary-value" id="monthly-average">₹0</span>
+                        </div>
                     </div>
                 </div>
 
                 <div class="card">
                     <h3>🛍️ Recent Purchases</h3>
-                    <div id="recentPurchases" class="recent-purchases">
-                        <!-- Recent purchases list -->
+                    <div id="recent-purchases-list" class="purchases-list">
+                        <!-- Recent purchases will be listed here -->
                     </div>
                 </div>
             </div>
@@ -323,15 +352,23 @@
                 </div>
 
                 <div class="card">
-                    <h3>🏆 Family Stats</h3>
+                    <h3>🏆 Family Shopping Stats</h3>
                     <div class="family-stats">
                         <div class="family-stat">
                             <span class="stat-label">Most Active Shopper</span>
                             <span class="stat-value" id="topShopper">-</span>
                         </div>
                         <div class="family-stat">
-                            <span class="stat-label">Total Family Items</span>
+                            <span class="stat-label">Total Items This Month</span>
                             <span class="stat-value" id="familyTotalItems">0</span>
+                        </div>
+                        <div class="family-stat">
+                            <span class="stat-label">Items Purchased</span>
+                            <span class="stat-value" id="familyPurchasedItems">0</span>
+                        </div>
+                        <div class="family-stat">
+                            <span class="stat-label">Urgent Items</span>
+                            <span class="stat-value" id="familyUrgentItems">0</span>
                         </div>
                     </div>
                 </div>
@@ -392,9 +429,9 @@
                 <span>🛒</span>
                 <span>List</span>
             </button>
-            <button class="nav-btn" data-tab="analytics">
-                <span>📊</span>
-                <span>Analytics</span>
+            <button class="nav-btn" data-tab="purchases">
+                <span>💰</span>
+                <span>Prices</span>
             </button>
             <button class="nav-btn" data-tab="family">
                 <span>👨‍👩‍👧‍👦</span>
