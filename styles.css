@@ -1802,3 +1802,196 @@ header {
         border: 1px solid #000;
     }
 }
+
+/* Shopping Stats */
+.shopping-stats {
+    background: linear-gradient(135deg, var(--info) 0%, #06B6D4 100%);
+    color: white;
+    padding: 20px;
+    border-radius: var(--radius-xl);
+    margin-bottom: 25px;
+    box-shadow: var(--shadow-lg);
+}
+
+.shopping-stats h3 {
+    margin-bottom: 15px;
+    opacity: 0.9;
+    font-weight: 600;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+}
+
+.stat-card {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 15px;
+    border-radius: var(--radius-lg);
+    text-align: center;
+    backdrop-filter: blur(10px);
+}
+
+.stat-number {
+    font-size: 1.8rem;
+    font-weight: 800;
+    margin-bottom: 5px;
+}
+
+.stat-card .stat-label {
+    font-size: 0.8rem;
+    opacity: 0.9;
+    font-weight: 500;
+}
+
+/* Input with Unit */
+.input-with-unit {
+    position: relative;
+    display: flex;
+}
+
+.input-with-unit input {
+    flex: 1;
+    border-radius: var(--radius) 0 0 var(--radius);
+    border-right: none;
+}
+
+.unit-select {
+    width: 80px;
+    border-radius: 0 var(--radius) var(--radius) 0;
+    border-left: 1px solid var(--divider);
+    background: var(--surface);
+}
+
+/* Purchase Form */
+.purchase-help {
+    color: var(--text-secondary);
+    margin-bottom: 20px;
+    font-size: 0.9rem;
+}
+
+.purchase-form {
+    margin-top: 20px;
+}
+
+.purchase-select {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid var(--divider);
+    border-radius: var(--radius);
+    font-size: 1rem;
+}
+
+.purchase-form .form-group {
+    margin-bottom: 20px;
+}
+
+.purchase-form label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+/* Summary Stats */
+.summary-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.summary-item {
+    background: var(--primary-light);
+    padding: 15px;
+    border-radius: var(--radius);
+    text-align: center;
+}
+
+.summary-label {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-bottom: 5px;
+    font-weight: 600;
+}
+
+.summary-value {
+    display: block;
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--primary);
+}
+
+/* Purchases List */
+.purchases-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.purchase-record {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    border-bottom: 1px solid var(--divider);
+    transition: background-color 0.2s;
+}
+
+.purchase-record:hover {
+    background: var(--primary-light);
+}
+
+.purchase-record:last-child {
+    border-bottom: none;
+}
+
+.purchase-info {
+    flex: 1;
+}
+
+.purchase-item-name {
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.purchase-details {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.purchase-price {
+    font-weight: 700;
+    color: var(--success);
+    font-size: 1.1rem;
+}
+
+/* Remove AI-specific styles */
+.ai-suggestions,
+.price-prediction,
+.ai-assist-btn,
+.suggestion-items {
+    display: none !important;
+}
+
+.smart-input-container input {
+    padding-right: 15px !important;
+}
+
+/* Item price display */
+.item-price-added {
+    background: var(--success-light);
+    color: var(--success-dark);
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-left: 8px;
+}
+
+.item-store {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    font-style: italic;
+}
